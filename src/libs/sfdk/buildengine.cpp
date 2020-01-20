@@ -700,6 +700,7 @@ void BuildEnginePrivate::initBuildTargetAt(int index) const
 
     bool ok = true;
 
+    ok &= createCacheFile(cacheFile(Constants::CMAKE_QUERY_CACHE), dump->cmakeQuery);
     ok &= createCacheFile(cacheFile(Constants::QMAKE_QUERY_CACHE), patchedQmakeQuery);
     ok &= createCacheFile(cacheFile(Constants::GCC_DUMP_MACHINE_CACHE), dump->gccDumpMachine);
     ok &= createCacheFile(cacheFile(Constants::GCC_DUMP_MACROS_CACHE), dump->gccDumpMacros);
@@ -878,6 +879,7 @@ bool BuildTargetDump::operator==(const BuildTargetDump &other) const
         && gccDumpMachine == other.gccDumpMachine
         && gccDumpMacros == other.gccDumpMacros
         && gccDumpIncludes == other.gccDumpIncludes
+        && cmakeQuery == other.cmakeQuery
         && qmakeQuery == other.qmakeQuery
         && rpmValidationSuites == other.rpmValidationSuites;
 }
@@ -889,6 +891,7 @@ QVariantMap BuildTargetDump::toMap() const
     data.insert(Constants::BUILD_TARGET_GCC_DUMP_MACHINE, gccDumpMachine);
     data.insert(Constants::BUILD_TARGET_GCC_DUMP_MACROS, gccDumpMacros);
     data.insert(Constants::BUILD_TARGET_GCC_DUMP_INCLUDES, gccDumpIncludes);
+    data.insert(Constants::BUILD_TARGET_CMAKE_QUERY, cmakeQuery);
     data.insert(Constants::BUILD_TARGET_QMAKE_QUERY, qmakeQuery);
     data.insert(Constants::BUILD_TARGET_RPM_VALIDATION_SUITES, rpmValidationSuites);
     return data;
@@ -900,6 +903,7 @@ void BuildTargetDump::fromMap(const QVariantMap &data)
     gccDumpMachine = data.value(Constants::BUILD_TARGET_GCC_DUMP_MACHINE).toString();
     gccDumpMacros = data.value(Constants::BUILD_TARGET_GCC_DUMP_MACROS).toString();
     gccDumpIncludes = data.value(Constants::BUILD_TARGET_GCC_DUMP_INCLUDES).toString();
+    cmakeQuery = data.value(Constants::BUILD_TARGET_CMAKE_QUERY).toString();
     qmakeQuery = data.value(Constants::BUILD_TARGET_QMAKE_QUERY).toString();
     rpmValidationSuites = data.value(Constants::BUILD_TARGET_RPM_VALIDATION_SUITES).toString();
 }
