@@ -44,6 +44,18 @@ int Command::executeRemoteCommand(const QString &command)
     // Convert to build engine paths
     QString mappedCommand = remotePathMapping(command);
 
+    // Share host mount points
+    mappedCommand.prepend(QLatin1String("export ") +
+                    QLatin1String("MER_SSH_HOST_SHARED_HOME=") +
+                    Utils::QtcProcess::quoteArgUnix(sharedHomePath()) +
+                    sharedHomePath() +
+                    Utils::QtcProcess::quoteArgUnix(sharedHomePath()) +
+                    QLatin1String("MER_SSH_HOST_SHARED_SRC=") +
+                    Utils::QtcProcess::quoteArgUnix(sharedHomePath()) +
+                    sharedSourcePath() +
+                    Utils::QtcProcess::quoteArgUnix(sharedHomePath()) +
+                    QLatin1String("; "));
+
     // Execute in build engine
     MerRemoteProcess process;
     process.setSshParameters(sshParameters());
