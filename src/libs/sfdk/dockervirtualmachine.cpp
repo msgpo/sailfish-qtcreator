@@ -398,6 +398,18 @@ void DockerVirtualMachinePrivate::doSetMemorySizeMb(int memorySizeMb, const QObj
     QTC_CHECK(false);
 }
 
+void DockerVirtualMachinePrivate::doSetSwapSizeMb(int swapSizeMb, const QObject *context,
+        const Functor<bool> &functor)
+{
+    Q_ASSERT(context);
+    Q_ASSERT(functor);
+
+    Q_UNUSED(swapSizeMb)
+    Q_UNUSED(context)
+    Q_UNUSED(functor)
+    QTC_CHECK(false);
+}
+
 void DockerVirtualMachinePrivate::doSetCpuCount(int cpuCount, const QObject *context,
         const Functor<bool> &functor)
 {
@@ -513,6 +525,7 @@ VirtualMachineInfo DockerVirtualMachinePrivate::virtualMachineInfoFromOutput(con
     QTC_ASSERT(!document.isNull(), return info);
 
     info.memorySizeMb = VirtualMachine::availableMemorySizeMb();
+    info.swapSizeMb = 0;
     info.cpuCount = VirtualMachine::availableCpuCount();
 
     QJsonObject labels = document.object();

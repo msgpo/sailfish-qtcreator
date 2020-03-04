@@ -65,6 +65,7 @@ const char WWW_PROXY_SERVERS[] = "proxy.servers";
 const char WWW_PROXY_EXCLUDES[] = "proxy.excludes";
 
 const char VM_MEMORY_SIZE_MB[] = "vm.memorySize";
+const char VM_SWAP_SIZE_MB[] = "vm.swapSize";
 const char VM_CPU_COUNT[] = "vm.cpuCount";
 const char VM_STORAGE_SIZE_MB[] = "vm.storageSize";
 
@@ -220,11 +221,22 @@ private:
 
 class VirtualMachinePropertiesAccessor : public PropertiesAccessor
 {
+    Q_GADGET
+
 public:
-    VirtualMachinePropertiesAccessor(VirtualMachine *virtualMachine)
+    enum Flag {
+        NoFlags = 0x0,
+        NoSwap = 0x1,
+    };
+    Q_DECLARE_FLAGS(Flags, Flag)
+    Q_FLAG(Flags)
+
+    VirtualMachinePropertiesAccessor(VirtualMachine *virtualMachine, Flags flags = NoFlags)
         : m_vm(virtualMachine)
+        , m_flags(flags)
     {
         m_memorySizeMb = m_vm->memorySizeMb();
+        m_swapSizeMb = m_vm->swapSizeMb();
         m_cpuCount = m_vm->cpuCount();
         m_storageSizeMb = m_vm->storageSizeMb();
     }
@@ -233,6 +245,8 @@ public:
     {
         QMap<QString, QString> values;
         values.insert(VM_MEMORY_SIZE_MB, QString::number(m_memorySizeMb));
+        if (!m_flags.testFlag(NoSwap))
+            values.insert(VM_SWAP_SIZE_MB, QString::number(m_swapSizeMb));
         values.insert(VM_CPU_COUNT, QString::number(m_cpuCount));
         values.insert(VM_STORAGE_SIZE_MB, QString::number(m_storageSizeMb));
         return values;
@@ -247,6 +261,14 @@ public:
             if (!parsePositiveInt(&m_memorySizeMb, value, errorString))
                 return Failed;
             if (m_memorySizeMb > VirtualMachine::availableMemorySizeMb()) {
+                *errorString = valueTooBigMessage();
+                return Failed;
+            }
+            return Prepared;
+        } else if (name == VM_SWAP_SIZE_MB && !m_flags.testFlag(NoSwap)) {
+            if (!parsePositiveInt(&m_swapSizeMb, value, errorString))
+                return Failed;
+            if (m_swapSizeMb > m_storageSizeMb) {
                 *errorString = valueTooBigMessage();
                 return Failed;
             }
@@ -284,6 +306,13 @@ public:
             ok &= stepOk;
         }
 
+        if (m_swapSizeMb != m_vm->swapSizeMb() && !m_flags.testFlag(NoSwap)) {
+            bool stepOk;
+            execAsynchronous(std::tie(stepOk), std::mem_fn(&VirtualMachine::setSwapSizeMb),
+                    m_vm.data(), m_swapSizeMb);
+            ok &= stepOk;
+        }
+
         if (m_cpuCount != m_vm->cpuCount()) {
             bool stepOk;
             execAsynchronous(std::tie(stepOk), std::mem_fn(&VirtualMachine::setCpuCount),
@@ -303,7 +332,9 @@ public:
 
 private:
     QPointer<VirtualMachine> m_vm;
+    Flags m_flags = NoFlags;
     int m_memorySizeMb = 0;
+    int m_swapSizeMb = 0;
     int m_cpuCount = 0;
     int m_storageSizeMb = 0;
 };
@@ -418,7 +449,7 @@ public:
     EmulatorPropertiesAccessor(Emulator *emulator)
         : m_emulator(emulator)
         , m_vmAccessor(std::make_unique<VirtualMachinePropertiesAccessor>(
-                    emulator->virtualMachine()))
+                    emulator->virtualMachine(), VirtualMachinePropertiesAccessor::NoSwap))
     {
     }
 

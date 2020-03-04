@@ -105,6 +105,10 @@ public:
             const Functor<bool> &functor);
     static int availableMemorySizeMb();
 
+    int swapSizeMb() const;
+    void setSwapSizeMb(int swapSizeMb, const QObject *context,
+            const Functor<bool> &functor);
+
     int cpuCount() const;
     void setCpuCount(int cpuCount, const QObject *context,
             const Functor<bool> &functor);
@@ -146,6 +150,7 @@ signals:
     void virtualMachineOffChanged(bool vmOff);
     void lockDownFailed();
     void memorySizeMbChanged(int sizeMb);
+    void swapSizeMbChanged(int sizeMb);
     void cpuCountChanged(int cpuCount);
     void storageSizeMbChanged(int storageSizeMb);
     void portForwardingChanged();
