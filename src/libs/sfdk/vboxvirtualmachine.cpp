@@ -312,10 +312,14 @@ void VBoxVirtualMachinePrivate::fetchInfo(VirtualMachineInfo::ExtraInfos extraIn
         arguments.append(QLatin1String(LIST));
         arguments.append(QLatin1String(MACHINE_READABLE));
 
-        enqueue(arguments, batch, [=](VBoxManageRunner *runner) {
+        auto *runner = enqueue(arguments, batch, [=](VBoxManageRunner *runner) {
+            // Command exits with 1 when no snapshot exists
+            if (runner->process()->exitCode() == 1)
+                return;
             snapshotInfoFromOutput(QString::fromLocal8Bit(runner->process()->readAllStandardOutput()),
                     info.get());
         });
+        runner->setExpectedExitCodes({0, 1});
     }
 
     commandQueue()->enqueueCheckPoint(context, [=]() { functor(*info, true); });
