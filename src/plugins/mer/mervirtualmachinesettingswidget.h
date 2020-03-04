@@ -44,7 +44,10 @@ class MerVirtualMachineSettingsWidget : public QWidget
 public:
     explicit MerVirtualMachineSettingsWidget(QWidget *parent = nullptr);
     ~MerVirtualMachineSettingsWidget();
+    void setSwapAllowed(bool allowed);
+    bool swapAllowed() const;
     void setMemorySizeMb(int sizeMb);
+    void setSwapSizeMb(int sizeMb);
     void setCpuCount(int count);
     void setStorageSizeMb(int storageSizeMb);
     void setVmOff(bool vmOff);
@@ -52,6 +55,7 @@ public:
 
 signals:
     void memorySizeMbChanged(int sizeMb);
+    void swapSizeMbChanged(int sizeMb);
     void cpuCountChanged(int count);
     void storageSizeMbChnaged(int sizeMb);
 

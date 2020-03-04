@@ -86,6 +86,8 @@ MerBuildEngineDetailsWidget::MerBuildEngineDetailsWidget(QWidget *parent)
             this, &MerBuildEngineDetailsWidget::wwwPortChanged);
     connect(m_ui->virtualMachineSettingsWidget, &MerVirtualMachineSettingsWidget::memorySizeMbChanged,
             this, &MerBuildEngineDetailsWidget::memorySizeMbChanged);
+    connect(m_ui->virtualMachineSettingsWidget, &MerVirtualMachineSettingsWidget::swapSizeMbChanged,
+            this, &MerBuildEngineDetailsWidget::swapSizeMbChanged);
     connect(m_ui->virtualMachineSettingsWidget, &MerVirtualMachineSettingsWidget::cpuCountChanged,
             this, &MerBuildEngineDetailsWidget::cpuCountChanged);
     connect(m_ui->virtualMachineSettingsWidget, &MerVirtualMachineSettingsWidget::storageSizeMbChnaged,
@@ -155,6 +157,7 @@ void MerBuildEngineDetailsWidget::setBuildEngine(const Sfdk::BuildEngine *buildE
     m_ui->userNameLabelText->setText(buildEngine->virtualMachine()->sshParameters().userName());
 
     m_ui->virtualMachineSettingsWidget->setMemorySizeMb(buildEngine->virtualMachine()->memorySizeMb());
+    m_ui->virtualMachineSettingsWidget->setSwapSizeMb(buildEngine->virtualMachine()->swapSizeMb());
     m_ui->virtualMachineSettingsWidget->setCpuCount(buildEngine->virtualMachine()->cpuCount());
     m_ui->virtualMachineSettingsWidget->setStorageSizeMb(buildEngine->virtualMachine()->storageSizeMb());
 }
@@ -208,6 +211,11 @@ void MerBuildEngineDetailsWidget::setWwwPort(quint16 port)
 void MerBuildEngineDetailsWidget::setMemorySizeMb(int sizeMb)
 {
     m_ui->virtualMachineSettingsWidget->setMemorySizeMb(sizeMb);
+}
+
+void MerBuildEngineDetailsWidget::setSwapSizeMb(int sizeMb)
+{
+    m_ui->virtualMachineSettingsWidget->setSwapSizeMb(sizeMb);
 }
 
 void MerBuildEngineDetailsWidget::setCpuCount(int count)

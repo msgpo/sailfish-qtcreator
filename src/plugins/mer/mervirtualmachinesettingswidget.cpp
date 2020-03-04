@@ -57,12 +57,32 @@ MerVirtualMachineSettingsWidget::~MerVirtualMachineSettingsWidget()
     delete ui;
 }
 
+// hack
+void MerVirtualMachineSettingsWidget::setSwapAllowed(bool allowed)
+{
+    QTC_ASSERT(!allowed, return);
+    QTC_ASSERT(!ui->swapLabel->isHidden(), return);
+
+    ui->swapLabel->setVisible(allowed);
+    ui->swapSizeInfoLabel->setVisible(allowed);
+    ui->swapSizeGbSpinBox->setVisible(allowed);
+
+    // QTBUG-6864
+    ui->formLayout->takeRow(ui->swapLabel);
+}
+
 void MerVirtualMachineSettingsWidget::setMemorySizeMb(int sizeMb)
 {
     if (ui->memorySpinBox->maximum() < sizeMb)
         ui->memorySpinBox->setRange(MIN_MEMORY_SIZE_MB, sizeMb);
 
     ui->memorySpinBox->setValue(sizeMb);
+}
+
+void MerVirtualMachineSettingsWidget::setSwapSizeMb(int sizeMb)
+{
+    const double sizeGb = sizeMb / 1024.0;
+    ui->swapSizeGbSpinBox->setValue(sizeGb);
 }
 
 void MerVirtualMachineSettingsWidget::setCpuCount(int count)
@@ -82,10 +102,12 @@ void MerVirtualMachineSettingsWidget::setStorageSizeMb(int storageSizeMb)
 void MerVirtualMachineSettingsWidget::setVmOff(bool vmOff)
 {
     ui->memorySpinBox->setEnabled(vmOff);
+    ui->swapSizeGbSpinBox->setEnabled(vmOff);
     ui->cpuCountSpinBox->setEnabled(vmOff);
     ui->storageSizeGbSpinBox->setEnabled(vmOff);
 
     ui->memoryInfoLabel->setVisible(!vmOff);
+    ui->swapSizeInfoLabel->setVisible(!vmOff);
     ui->cpuInfoLabel->setVisible(!vmOff);
     ui->storageSizeInfoLabel->setVisible(!vmOff);
 }
@@ -100,19 +122,32 @@ void MerVirtualMachineSettingsWidget::initGui()
     int maxMemorySizeMb = VirtualMachine::availableMemorySizeMb() > 0
         ? VirtualMachine::availableMemorySizeMb()
         : DEFAULT_MAX_MEMORY_SIZE_MB;
+    ui->swapSizeGbSpinBox->setRange(0, 999999); // "unlimited", later limited by storageSizeGb
     ui->memorySpinBox->setRange(MIN_MEMORY_SIZE_MB, maxMemorySizeMb);
     ui->cpuCountSpinBox->setRange(1, VirtualMachine::availableCpuCount());
 
     connect(ui->memorySpinBox, QOverload<int>::of(&QSpinBox::valueChanged),
             this, &MerVirtualMachineSettingsWidget::memorySizeMbChanged);
+    connect(ui->swapSizeGbSpinBox, QOverload<double>::of(&QDoubleSpinBox::valueChanged), [this](double value) {
+        emit swapSizeMbChanged(static_cast<int>(value * 1024));
+    });
     connect(ui->cpuCountSpinBox, QOverload<int>::of(&QSpinBox::valueChanged),
             this, &MerVirtualMachineSettingsWidget::cpuCountChanged);
     connect(ui->storageSizeGbSpinBox, QOverload<double>::of(&QDoubleSpinBox::valueChanged), [this](double value) {
+        QTC_CHECK(ui->swapSizeGbSpinBox->value() <= value);
+        ui->swapSizeGbSpinBox->setMaximum(value);
+
         emit storageSizeMbChnaged(static_cast<int>(value * 1024));
     });
 
     ui->memoryInfoLabel->setPixmap(Utils::Icons::INFO.pixmap());
     ui->memoryInfoLabel->setToolTip(
+            QLatin1String("<font color=\"red\">")
+            + tr("Stop the virtual machine to unlock this field for editing.")
+            + QLatin1String("</font>"));
+
+    ui->swapSizeInfoLabel->setPixmap(Utils::Icons::INFO.pixmap());
+    ui->swapSizeInfoLabel->setToolTip(
             QLatin1String("<font color=\"red\">")
             + tr("Stop the virtual machine to unlock this field for editing.")
             + QLatin1String("</font>"));

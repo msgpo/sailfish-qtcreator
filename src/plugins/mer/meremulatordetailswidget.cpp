@@ -92,6 +92,7 @@ MerEmulatorDetailsWidget::MerEmulatorDetailsWidget(QWidget *parent)
         emit freePortsChanged(PortList::fromString(m_ui->freePortsLineEdit->text()));
     });
 
+    m_ui->virtualMachineSettingsWidget->setSwapAllowed(false);
     connect(m_ui->virtualMachineSettingsWidget, &MerVirtualMachineSettingsWidget::memorySizeMbChanged,
             this, &MerEmulatorDetailsWidget::memorySizeMbChanged);
     connect(m_ui->virtualMachineSettingsWidget, &MerVirtualMachineSettingsWidget::cpuCountChanged,
