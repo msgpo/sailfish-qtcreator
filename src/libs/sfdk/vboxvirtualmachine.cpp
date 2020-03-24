@@ -266,7 +266,7 @@ void VBoxVirtualMachinePrivate::fetchInfo(VirtualMachineInfo::ExtraInfos extraIn
 
     const QPointer<const QObject> context_{context};
 
-    auto enqueue = [=](const QStringList &arguments, CommandQueue::BatchId batch, auto onSuccess) {
+    auto enqueue = [=](const QStringList &arguments, CommandQueue::BatchId batch, const QList<int> &expectedExitCodes, auto onSuccess) {
         auto runner = std::make_unique<VBoxManageRunner>(arguments);
         QObject::connect(runner.get(), &VBoxManageRunner::failure, Sdk::instance(), [=]() {
             commandQueue()->cancelBatch(batch);
@@ -274,9 +274,8 @@ void VBoxVirtualMachinePrivate::fetchInfo(VirtualMachineInfo::ExtraInfos extraIn
         });
         QObject::connect(runner.get(), &VBoxManageRunner::success,
                 context, std::bind(onSuccess, runner.get()));
-        VBoxManageRunner *runner_ = runner.get();
+        runner->setExpectedExitCodes(expectedExitCodes);
         commandQueue()->enqueue(std::move(runner));
-        return runner_;
     };
 
     CommandQueue::BatchId batch = commandQueue()->beginBatch();
@@ -288,7 +287,7 @@ void VBoxVirtualMachinePrivate::fetchInfo(VirtualMachineInfo::ExtraInfos extraIn
     arguments.append(q->name());
     arguments.append(QLatin1String(MACHINE_READABLE));
 
-    enqueue(arguments, batch, [=](VBoxManageRunner *runner) {
+    enqueue(arguments, batch, {0}, [=](VBoxManageRunner *runner) {
         // FIXME return by argument
         *info = virtualMachineInfoFromOutput(
                 QString::fromLocal8Bit(runner->process()->readAllStandardOutput()));
@@ -299,7 +298,7 @@ void VBoxVirtualMachinePrivate::fetchInfo(VirtualMachineInfo::ExtraInfos extraIn
         arguments.append(QLatin1String(LIST));
         arguments.append(QLatin1String(HDDS));
 
-        enqueue(arguments, batch, [=](VBoxManageRunner *runner) {
+        enqueue(arguments, batch, {0}, [=](VBoxManageRunner *runner) {
             storageInfoFromOutput(QString::fromLocal8Bit(runner->process()->readAllStandardOutput()),
                     info.get());
         });
@@ -312,14 +311,13 @@ void VBoxVirtualMachinePrivate::fetchInfo(VirtualMachineInfo::ExtraInfos extraIn
         arguments.append(QLatin1String(LIST));
         arguments.append(QLatin1String(MACHINE_READABLE));
 
-        auto *runner = enqueue(arguments, batch, [=](VBoxManageRunner *runner) {
+        enqueue(arguments, batch, {0, 1}, [=](VBoxManageRunner *runner) {
             // Command exits with 1 when no snapshot exists
             if (runner->process()->exitCode() == 1)
                 return;
             snapshotInfoFromOutput(QString::fromLocal8Bit(runner->process()->readAllStandardOutput()),
                     info.get());
         });
-        runner->setExpectedExitCodes({0, 1});
     }
 
     commandQueue()->enqueueCheckPoint(context, [=]() { functor(*info, true); });
